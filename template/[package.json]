@@ -1,0 +1,16 @@
+{
+	"name": "limbo-dark",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"build": "MODE=production node ./scripts/build.js",
+		"watch": "MODE=development node ./scripts/watch.js"
+	},
+	"devDependencies": {
+		"@types/node": "^24.0.1",
+		"chokidar": "^4.0.3",
+		"dotenv": "^16.5.0",
+		"prettier": "^3.5.3",
+		"sass": "^1.89.2"
+	}
+}

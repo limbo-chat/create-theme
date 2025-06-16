@@ -1,0 +1,11 @@
+import path from "node:path";
+
+export const IS_PROD = process.env.MODE === "production";
+
+// change this to whatever name you want your file to be named
+export const DIST_FILE_NAME = "<%= theme.name %>.css";
+
+export const SRC_DIR_PATH = "./styles";
+export const DIST_DIR_PATH = "./dist";
+export const ENTRY_FILE_PATH = path.join(SRC_DIR_PATH, "index.scss");
+export const DIST_FILE_PATH = path.join(DIST_DIR_PATH, DIST_FILE_NAME);
