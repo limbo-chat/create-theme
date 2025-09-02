@@ -1,50 +1,72 @@
 import fs from "node:fs";
 import path from "node:path";
-import chalk from "chalk";
 import * as p from "@clack/prompts";
 import * as utils from "poopgen/utils";
 
-const boldWarning = chalk.bold.redBright.bold("Warning:");
+// helpers
+
+/**
+ * @returns {never}
+ */
+function cancel() {
+	p.cancel("cancelled");
+	process.exit(0);
+}
+
+/**
+ * @param {string} destPath
+ */
+async function initGit(destPath) {
+	const spinner = p.spinner();
+
+	spinner.start("Initializing Git repo...");
+
+	const dirIsInsideGitRepo = await utils.dirIsInsideGitRepo(destPath);
+
+	if (dirIsInsideGitRepo) {
+		spinner.stop("Docs are inside a Git repo, skipping");
+
+		return;
+	}
+
+	try {
+		await utils.initGit({
+			cwd: destPath,
+		});
+	} catch {
+		spinner.stop("Failed to initialize Git repo, skipping");
+	}
+
+	spinner.stop("Successfully intialized Git repo");
+}
 
 /** @type{import("poopgen").BeforeFn} */
 export async function before(ctx) {
-	const result = await p.group(
-		{
-			name: () =>
-				p.text({
-					message: "What do you want to name your theme?",
-					validate: (value) => {
-						if (value.trim().length === 0) {
-							return "Name is required";
-						}
-					},
-				}),
+	const nameInput = await p.text({
+		message: "What do you want to name your plugin?",
+		defaultValue: "Mint Starter Kit",
+		validate: (value) => {
+			if (value.trim().length === 0) {
+				return "Name is required";
+			}
 		},
-		{
-			onCancel: () => {
-				p.cancel("cancelled");
-				process.exit(0);
-			},
-		}
-	);
+	});
 
-	const { dir, name, packageName } = utils.parseProjectName(result.name, ctx.dir.path);
+	if (p.isCancel(nameInput)) {
+		cancel();
+	}
+
+	const { dir, name, packageName } = utils.parseProjectName(nameInput, ctx.dir.path);
 
 	if (fs.existsSync(dir)) {
 		if (fs.readdirSync(dir).length > 0) {
-			console.log(
-				`${boldWarning} ${chalk.red.bold(result.name)} already exists and is not empty, aborting`
-			);
-
+			p.cancel(`${dir} already exists and is not empty, aborting`);
 			process.exit(1);
 		}
 	}
 
 	// set the output directory
 	ctx.dir.path = dir;
-
-	// set start millseconds for after generation
-	ctx.data.startMS = Date.now();
 
 	// add the theme's name to our context
 	ctx.data.theme = {
@@ -70,38 +92,33 @@ export async function before(ctx) {
 export async function after(ctx) {
 	const dest = ctx.dir.path;
 
-	console.log(
-		`\n${chalk.bold(chalk.red(ctx.data.theme.name))} ${`scaffolded successfully in ${Date.now() - ctx.data.startMS}ms!`} \n`
-	);
+	p.log.success("Created theme!");
 
 	const nodePackageManager = utils.getNodePackageManager();
 
-	const result = await p.group(
-		{
-			should_init_git: () =>
-				p.confirm({
-					message: "Initialize Git repo?",
-				}),
-			should_install_deps: () =>
-				p.confirm({
-					message: `Install dependencies with ${nodePackageManager}?`,
-				}),
-		},
-		{
-			onCancel: () => {
-				p.cancel("cancelled");
-				process.exit(0);
-			},
-		}
-	);
+	const shouldInitGit = await p.confirm({
+		message: "Would you like to init a Git repo?",
+	});
 
-	// init a git repo in the destination
-	if (result.should_init_git) {
+	if (p.isCancel(shouldInitGit)) {
+		cancel();
+	}
+
+	if (shouldInitGit) {
+		// init a git repo in the destination
 		await initGit(dest);
 	}
 
+	const shouldInstallDeps = await p.confirm({
+		message: `Install dependencies with ${nodePackageManager}?`,
+	});
+
+	if (p.isCancel(shouldInstallDeps)) {
+		cancel();
+	}
+
 	// install node modules with user's package manager in the destination
-	if (result.should_install_deps) {
+	if (shouldInstallDeps) {
 		const spinner = p.spinner();
 
 		try {
@@ -119,75 +136,17 @@ export async function after(ctx) {
 
 	// log next steps
 
-	console.log("\nNext steps:");
+	const themeDir = path.relative(process.cwd(), dest);
 
-	if (process.cwd() !== dest) {
-		console.log(chalk.italic(`  cd ${path.relative(process.cwd(), dest)}`));
+	p.outro("All done!");
+
+	console.log("Next steps:");
+
+	console.log(`  cd ${themeDir}`);
+
+	if (!shouldInstallDeps) {
+		console.log(`  ${nodePackageManager} install`);
 	}
 
-	if (!result.should_install_deps) {
-		if (nodePackageManager === "yarn") {
-			console.log(chalk.italic("  yarn"));
-		} else {
-			console.log(chalk.italic(`  ${nodePackageManager} install`));
-		}
-	}
-
-	console.log(chalk.italic(`  ${nodePackageManager} run watch`));
-}
-
-// --- helpers ---
-
-/**
- * @param {string} destPath
- */
-async function initGit(destPath) {
-	const spinner = p.spinner();
-
-	const dirName = path.parse(destPath).name;
-
-	spinner.start("Initializing git repository...");
-
-	try {
-		const destHasGitRepo = utils.dirHasGitRepo(destPath);
-		const dirIsInsideGitRepo = await utils.dirIsInsideGitRepo(destPath);
-
-		if (destHasGitRepo) {
-			spinner.stop();
-
-			const shouldOverwriteGit = await p.confirm({
-				message: `${boldWarning} There is already a git repository. Initializing a new repository would delete the previous history. Would you like to continue?`,
-				initialValue: false,
-			});
-
-			if (!shouldOverwriteGit) {
-				spinner.message("Skipping git initialization.");
-
-				return;
-			}
-
-			fs.rmSync(path.join(destPath, ".git"));
-		} else if (dirIsInsideGitRepo) {
-			spinner.stop();
-
-			const shouldInitChildGitRepo = await p.confirm({
-				message: `${boldWarning} "${dirName}" is already in a git worktree. Would you still like to initialize a new git repository in this directory?`,
-				initialValue: false,
-			});
-
-			if (!shouldInitChildGitRepo) {
-				spinner.message("Skipping git initialization");
-
-				return;
-			}
-		}
-
-		await utils.initGit({
-			cwd: destPath,
-		});
-
-		spinner.stop("Successfully intialized git repository");
-	} catch {
-		spinner.stop("Failed to initialize git repository, skipping");
-	}
+	console.log(`  ${nodePackageManager} run watch`);
 }

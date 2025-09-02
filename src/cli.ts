@@ -6,9 +6,9 @@ import chalk from "chalk";
 
 try {
 	await poopgen({
-		// when testing create-whop in development, we will always gen the output to this directory that is not tracked by git.
-		dest: process.env.NODE_ENV === "development" ? "./dest" : undefined,
-		template: path.join(import.meta.dirname, "../template"),
+		// when testing create-limbo-theme in development, we will always gen the output to this directory that is not tracked by git.
+		templatePath: path.join(import.meta.dirname, "../template"),
+		destPath: process.env.NODE_ENV === "development" ? "./dest" : ".",
 	});
 } catch (err) {
 	console.log(chalk.red("An unknown error has occurred"));

@@ -15,8 +15,8 @@ importers:
         specifier: ^5.4.1
         version: 5.4.1
       poopgen:
-        specifier: ^0.3.0
-        version: 0.3.0
+        specifier: ^1.0.1
+        version: 1.0.1
     devDependencies:
       '@types/node':
         specifier: ^22.5.5
@@ -639,8 +639,8 @@ packages:
     resolution: {integrity: sha512-saLsH7WeYYPiD25LDuLRRY/i+6HaPYr6G1OUlN39otzkSTxKnubR9RTxS3/Kk50s1g2JTgFwWQDQyplC5/SHZg==}
     engines: {node: '>= 6'}
 
-  poopgen@0.3.0:
-    resolution: {integrity: sha512-7M3ZR97s4uqERi1Pv6V7WfjLbfR4n9ZUWVL2oCghs9c5Og5vNKnFa6q/ZzX5MAzC+LF0ZlJHUXzyHXWvJPok7g==}
+  poopgen@1.0.1:
+    resolution: {integrity: sha512-LDNCoAUNl25k6QpcCl9xX61sEZZWqeUp3yehub2S27K6jJEndRHFR1kBPVoJblxY7G+mHrNB1tM63f+e4DXJNA==}
 
   postcss-load-config@6.0.1:
     resolution: {integrity: sha512-oPtTM4oerL+UXmx+93ytZVN82RrlY/wPUV8IeDxFrzIjXOLF1pN+EmKPLbubvKHT2HC20xXsCAH2Z+CKV6Oz/g==}
@@ -1315,7 +1315,7 @@ snapshots:
 
   pirates@4.0.6: {}
 
-  poopgen@0.3.0:
+  poopgen@1.0.1:
     dependencies:
       ejs: 3.1.10
       execa: 9.4.0
